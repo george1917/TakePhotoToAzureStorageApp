@@ -1,0 +1,62 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="jumbotron">
+    <p>
+        <button id="snap" style="font-size:24px" onclick="takePhoto()">Take Photo</button>
+    </p>
+
+    <video id="video" width="320" height="240"></video>
+    <canvas id="canvas" width="320" height="240"></canvas>
+
+    <p id="dataDiv" style="font-size:24px"></p>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script>
+    let video = document.getElementById("video");
+
+    function getMedia() {
+        let constraints = {
+            video: { width: 320, height: 240 },
+            audio: true
+        };
+
+        let promise = navigator.mediaDevices.getUserMedia(constraints);
+        promise.then(function (MediaStream) {
+            video.srcObject = MediaStream;
+            video.play();
+            document.getElementById('take').style.display = 'none';
+        }).catch(function (PermissionDeniedError) {
+            console.log(PermissionDeniedError);
+        })
+    }
+
+    function takePhoto() {
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+
+        canvas.toBlob(function (blob) {
+            var image = document.getElementById("canvas").toDataURL("image/png");
+            image = image.replace('data:image/png;base64,', '');
+
+            $.ajax({
+                type: "POST",
+                url: "/Home/AttachFile",
+                contentType: "application/json; charset=utf-8",
+                data: '{ "imageData" : "' + image + '" }',
+                dataType: "json",
+                success: function (result, status, xhr) {
+                    $("#dataDiv").html(result.status);
+                },
+                error: function (xhr, status, error) {
+                    $("#dataDiv").html("Result: " + status + " " + error + " " + xhr.status + " " + xhr.statusText)
+                }
+            });
+        });
+    }
+
+    getMedia()
+</script>
